@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자산 관리 시스템 (P.A.M.S)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2';
+        window.supabaseCreateClient = createClient;
+    </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display.swap">
+    
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-100">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="flex flex-col items-center p-6 bg-white rounded-lg shadow-2xl">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-3"></div>
+            <p id="loading-text" class="text-lg font-semibold text-gray-700">처리 중...</p>
+        </div>
+    </div>
+
+    <div class="flex min-h-screen bg-slate-100">
+        
+        <nav id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 text-white flex flex-col shadow-lg transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+            <div class="px-6 py-5 border-b border-slate-700">
+                <h2 class="text-2xl font-bold text-indigo-400">P.A.M.S</h2>
+                <span class="text-xs text-slate-400">Product Asset Mgmt System</span>
+            </div>
+            <ul class="flex-1 py-4 space-y-2">
+                <li class="px-4"><button id="nav-dashboard" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-slate-700 bg-indigo-600 transition-colors">📊 현황 모니터링</button></li>
+                <li class="px-4"><button id="nav-assets" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors">🖥️ 자산 마스터</button></li>
+                <li class="px-4"><button id="nav-consumption" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors">📉 소모/반환 현황</button></li>
+                <li class="px-4"><button id="nav-lifecycle" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors">🔄 횟수 수명 관리</button></li>
+                
+                <li class="px-4 pt-2 border-t border-slate-700/50 mt-2"><span class="text-xs font-semibold uppercase text-slate-500 pl-4">마스터 관리</span></li>
+                <li class="px-4"><button id="nav-departments" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors">🏢 부서 관리</button></li>
+                <li class="px-4"><button id="nav-users" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors">👥 사용자 관리</button></li>
+                <li class="px-4"><button id="nav-audit-log" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors">📜 활동 로그</button></li>
+
+                <li class="px-4"><button id="nav-settings" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors">⚙️ 설정</button></li>
+            </ul>
+            <div class="px-6 py-4 border-t border-slate-700 text-xs text-slate-400">
+                <p id="connection-status">Connecting...</p>
+            </div>
+        </nav>
+
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden"></div>
+
+        <main class="flex-1 md:ml-64 overflow-y-auto">
+            
+            <div id="mobile-header" class="md:hidden sticky top-0 z-30 bg-slate-800 text-white p-4 flex justify-between items-center shadow-lg">
+                <div>
+                    <h2 class="text-xl font-bold text-indigo-400">P.A.M.S</h2>
+                </div>
+                <button id="open-menu-btn" class="p-2 rounded-lg hover:bg-slate-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <input type="file" id="ocr-file-input" accept="image/*" capture="environment" class="hidden">
+
+            <div class="p-4 md:p-8">
+            
+                <div id="view-dashboard" class="view-content animate-fade-in">
+                    <h1 class="text-3xl font-extrabold text-slate-800 mb-6">현황 모니터링</h1>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow border-b-4 border-indigo-500">
+                            <p class="text-sm font-medium text-slate-500">총 등록 자산 (Master)</p>
+                            <p id="kpi-total-assets" class="text-4xl font-extrabold text-slate-900 mt-2">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow border-b-4 border-green-500">
+                            <p class="text-sm font-medium text-slate-500">현재 총 재고량 (Stock)</p>
+                            <p id="kpi-total-stock" class="text-4xl font-extrabold text-slate-900 mt-2">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow border-b-4 border-red-500">
+                            <p class="text-sm font-medium text-slate-500">🚨 조치 필요 항목</p>
+                            <p id="kpi-action-required" class="text-4xl font-extrabold text-red-600 mt-2">0</p>
+                        </div>
+                    </div>
+
+                    <div id="alert-section" class="hidden mb-8">
+                        <h2 class="text-xl font-bold text-red-600 flex items-center mb-4"><span class="mr-2">🚨</span> 긴급 조치 필요 항목</h2>
+                        <div id="alert-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow">
+                            <h3 class="text-xl font-semibold mb-5 text-slate-800 border-b pb-3">📦 창고별 재고 현황</h3>
+                            <div id="stock-by-warehouse-container" class="space-y-4">
+                                <canvas id="stock-by-warehouse-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow">
+                            <h3 class="text-xl font-semibold mb-5 text-slate-800 border-b pb-3">⚡ 최근 활동 (Top 5)</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-slate-200">
+                                    <thead class="bg-slate-50"><tr><th class="p-3 text-left">처리</th><th class="p-3 text-left">코드</th><th class="p-3 text-left">시리얼</th><th class="p-3 text-right">수량</th><th class="p-3 text-left">시간</th></tr></thead>
+                                    <tbody id="dashboard-history-table" class="divide-y divide-slate-200"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow mb-8">
+                        <h3 class="text-xl font-semibold mb-5 text-slate-800 border-b pb-3">📊 자재 유형별 마스터 현황</h3>
+                        <div id="type-breakdown-container" class="grid grid-cols-1 gap-4" style="max-height: 350px;">
+                            <canvas id="type-breakdown-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-assets" class="view-content animate-fade-in hidden">
+                    <h1 class="text-3xl font-extrabold text-slate-800 mb-6">자산 마스터 관리</h1>
+                    
+                    <div class="flex flex-col md:flex-row justify-between items-center p-4 bg-white rounded-xl shadow mb-4 space-y-4 md:space-y-0">
+                        <button id="open-asset-modal-new" class="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-700 transition">+ 새 자산 등록</button>
+                        
+                        <div class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
+                            <button id="asset-select-all" class="w-full md:w-auto px-4 py-3 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition">□ 전체 선택</button>
+                            <button id="open-bulk-label-modal" class="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition opacity-50 cursor-not-allowed" disabled>
+                                🖨️ 선택 라벨 인쇄 (0)
+                            </button>
+                        </div>
+                        
+                        <div class="flex flex-col md:flex-row w-full md:w-auto space-y-3 md:space-y-0 md:space-x-3 opacity-50 cursor-not-allowed">
+                            <label class="w-full md:w-auto block text-center px-6 py-3 bg-slate-200 text-slate-800 font-semibold rounded-lg">📤 엑셀 업로드</label>
+                            <button class="w-full md:w-auto px-6 py-3 bg-slate-200 text-slate-800 font-semibold rounded-lg">⬇️ 엑셀 다운로드</button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row justify-between items-center p-4 bg-white rounded-xl shadow mb-8 space-y-3 md:space-y-0 md:space-x-4">
+                        <div class="w-full md:w-1/2">
+                            <label for="asset-search-input" class="text-sm font-medium text-slate-600">자산 검색</label>
+                            <input type="text" id="asset-search-input" placeholder="자산명, 코드, 관리번호로 검색..." class="w-full">
+                        </div>
+                        <div class="w-full md:w-1/2">
+                            <label for="asset-filter-type" class="text-sm font-medium text-slate-600">유형 필터</label>
+                            <select id="asset-filter-type" class="w-full">
+                                <option value="">모든 유형</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="asset-list" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+                </div>
+
+                <div id="view-consumption" class="view-content animate-fade-in hidden">
+                    <h1 class="text-3xl font-extrabold text-slate-800 mb-6">일일 소모/반환 현황</h1>
+                    <div class="bg-white p-6 rounded-xl shadow mb-8">
+                        <h3 class="text-xl font-semibold mb-5 text-slate-800 border-b pb-3">재고 수기 처리</h3>
+                        <form id="consumption-form" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700">자산 코드 (product_code) *</label>
+                                    <select name="product_code" id="cons-pcode" required class="font-mono"><option value="">자산 선택...</option></select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700">시리얼 (serial / 창고) *</label>
+                                    <select name="serial_number" id="cons-serial" required class="font-mono"><option value="">먼저 자산 코드를 선택하세요</option></select>
+                                </div>
+                                <input type="hidden" name="wh_code" id="cons-wh-code">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700">수량 (qty) *</label>
+                                    <input type="number" name="qty" required min="1" value="1">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700">처리 (tran_code) *</label>
+                                    <select name="tran_code">
+                                        <option value="CONSUME">소모 (출고)</option>
+                                        <option value="ROLLBACK">반환 (입고)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex justify-end pt-3">
+                                <button type="submit" class="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">처리 등록</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-xl font-semibold mb-5 text-slate-800 border-b pb-3">최근 처리 이력 (Top 20)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50"><tr><th class="p-3 text-left">처리</th><th class="p-3 text-left">코드</th><th class="p-3 text-left">시리얼</th><th class="p-3 text-right">수량</th><th class="p-3 text-left">시간</th></tr></thead>
+                                <tbody id="recent-lot-history-table" class="divide-y divide-slate-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-lifecycle" class="view-content animate-fade-in hidden">
+                    <h1 class="text-3xl font-extrabold text-slate-800 mb-6">횟수 수명 관리</h1>
+                    
+                    <div class="flex flex-col md:flex-row justify-between items-center p-4 bg-white rounded-xl shadow mb-8 space-y-3 md:space-y-0 md:space-x-4">
+                        <div class="w-full md:w-1/2">
+                            <label for="lifecycle-search-input" class="text-sm font-medium text-slate-600">자산 검색</label>
+                            <input type="text" id="lifecycle-search-input" placeholder="제품 코드, 시리얼, 관리번호로 검색..." class="w-full">
+                        </div>
+                        <div class="w-full md:w-1/2">
+                            <label for="lifecycle-filter-type" class="text-sm font-medium text-slate-600">유형 필터</label>
+                            <select id="lifecycle-filter-type" class="w-full">
+                                <option value="">모든 유형</option>
+                                </select>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-xl shadow mb-8">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 border-b pb-3">
+                            <h3 class="text-xl font-semibold text-slate-800 mb-2 md:mb-0">사용 횟수(COUNT) 관리 대상</h3>
+                            <p class="text-sm text-slate-500">💡 버튼을 눌러 사용 횟수를 증가시킬 수 있습니다.</p>
+                        </div>
+                        <div id="lifecycle-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    </div>
+                </div>
+                <div id="view-departments" class="view-content animate-fade-in hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-3xl font-extrabold text-slate-800">부서 마스터 관리</h1>
+                        <button id="open-dept-modal-new" class="px-5 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-700 transition">+ 새 부서 등록</button>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="p-3 text-left">부서 코드</th>
+                                        <th class="p-3 text-left">부서명</th>
+                                        <th class="p-3 text-left">생성일</th>
+                                        <th class="p-3 text-right">관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dept-table-body" class="divide-y divide-slate-200">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="view-users" class="view-content animate-fade-in hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-3xl font-extrabold text-slate-800">사용자 마스터 관리</h1>
+                        <button id="open-user-modal-new" class="px-5 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-700 transition">+ 새 사용자 등록</button>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="p-3 text-left">사용자 ID</th>
+                                        <th class="p-3 text-left">사용자명</th>
+                                        <th class="p-3 text-left">소속 부서</th>
+                                        <th class="p-3 text-right">관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="user-table-body" class="divide-y divide-slate-200">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-audit-log" class="view-content animate-fade-in hidden">
+                    <h1 class="text-3xl font-extrabold text-slate-800 mb-6">활동 로그 (Audit Trail)</h1>
+                    
+                    <div class="flex flex-col md:flex-row justify-between items-center p-4 bg-white rounded-xl shadow mb-8 space-y-3 md:space-y-0 md:space-x-4">
+                        <div class="w-full">
+                            <label for="audit-log-user-filter" class="text-sm font-medium text-slate-600">사용자 필터</label>
+                            <select id="audit-log-user-filter" class="w-full">
+                                <option value="">모든 사용자</option>
+                            </select>
+                        </div>
+                        <div class="w-full">
+                            <label for="audit-log-start-date" class="text-sm font-medium text-slate-600">조회 시작일</label>
+                            <input type="date" id="audit-log-start-date" class="w-full">
+                        </div>
+                        <div class="w-full">
+                            <label for="audit-log-end-date" class="text-sm font-medium text-slate-600">조회 종료일</label>
+                            <input type="date" id="audit-log-end-date" class="w-full">
+                        </div>
+                        <button id="audit-log-search-btn" class="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-700 transition mt-6 md:mt-0">조회</button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="p-3 text-left">시간</th>
+                                        <th class="p-3 text-left">사용자</th>
+                                        <th class="p-3 text-left">작업</th>
+                                        <th class="p-3 text-left">대상</th>
+                                        <th class="p-3 text-left">상세 내용</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audit-log-table-body" class="divide-y divide-slate-200">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-settings" class="view-content animate-fade-in hidden">
+                    <h1 class="text-3xl font-extrabold text-slate-800 mb-6">설정</h1>
+                    <div class="bg-white p-8 rounded-xl shadow max-w-xl">
+                        <label class="block text-sm font-medium text-slate-700">관리자 ID / 이름 (필수)</label>
+                        <input type="text" id="managerIdInput" placeholder="예: HONG-001" class="mt-1 block w-full border border-slate-300 rounded-lg p-3">
+                        <p class="text-sm text-slate-500 mt-2">* 모든 트랜잭션 기록에 이 ID가 사용됩니다.</p>
+                    </div>
+                </div>
+
+            </div></main>
+    </div>
+
+    <div id="asset-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-40 hidden">
+        <div class="bg-white rounded-xl w-full max-w-4xl p-6 md:p-8 overflow-y-auto max-h-[90vh]">
+            <h3 id="asset-modal-title" class="text-2xl font-bold text-slate-800 mb-6 border-b pb-3">새 자산 등록</h3>
+            <form id="asset-form">
+                <input type="hidden" id="edit-id" name="edit_id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-indigo-50 rounded-xl">
+                        <div><label class="block text-sm font-medium text-indigo-900">공장 (factory_id) *</label>
+                            <select name="factory_id" required class="border-indigo-300">
+                                <option value="USB">USB (울산 전동화 공장)</option>
+                                <option value="PST">PST (평택 시작실)</option>
+                                <option value="HLB">HLB (화성 연구소)</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-sm font-medium text-indigo-900">창고 (wh_code) *</label>
+                            <select name="wh_code" required class="border-indigo-300">
+                                <option value="OW">OW (사무창고)</option>
+                                <option value="FW">FW (공장창고)</option>
+                                <option value="LW">LW (연구실창고)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-span-1 md:col-span-2"><label class="block text-sm font-medium text-slate-700">자산명 (product_name) *</label><input type="text" name="product_name" required placeholder="예: 전동 드라이버 A-Type"></div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">자산 코드 (product_code) *</label>
+                        <div class="flex space-x-2 mt-1">
+                            <input type="text" name="product_code" required class="!mt-0 flex-grow w-auto" placeholder="직접 입력 또는 스캔">
+                            <button type="button" id="open-scanner-btn-product" class="flex-shrink-0 px-3 py-3 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition text-sm font-semibold flex items-center space-x-1.5">
+                                <svg class="scan-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                <span>바코드</span>
+                            </button>
+                            <button type="button" id="open-ocr-btn-product" class="flex-shrink-0 px-3 py-3 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 transition text-sm font-semibold flex items-center space-x-1.5">
+                                <svg class="scan-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                </svg>
+                                <span>OCR</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div><label class="block text-sm font-medium text-slate-700">구매일 *</label><input type="date" name="purchase_date" required></div>
+                    
+                    <div><label class="block text-sm font-medium text-slate-700">자산 대분류 (cmf_1) *</label>
+                        <select name="cmf_1" required>
+                            <option value="">선택...</option>
+                            <option value="M">M (모비스)</option>
+                            <option value="B">B (NBTS)</option>
+                            <option value="K">K (NVHK)</option>
+                            <option value="H">H (화성 연구소)</option>
+                            <option value="S">S (평택 시작실)</option>
+                        </select>
+                    </div>
+                    
+                    <div><label class="block text-sm font-medium text-slate-700">상세 유형 (product_type) *</label>
+                        <select name="product_type" required>
+                            <option value="">선택...</option>
+                            <option value="보전 자재">보전 자재 (EMM)</option>
+                            <option value="컴퓨터/노트북">컴퓨터/노트북 (COM)</option>
+                            <option value="서버">서버 (SVR)</option>
+                            <option value="도구">도구 (TOL)</option>
+                            <option value="소모성 자재">소모성 자재 (CSM)</option>
+                            <option value="기타">기타 (ETC)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-span-1 md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700">사용 부서 (dept) *</label>
+                        <select id="asset-form-dept" name="dept_code" required>
+                            <option value="">선택...</option>
+                        </select>
+                    </div>
+
+                    <div class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-100 rounded-xl border border-slate-200">
+                        <h4 class="col-span-1 md:col-span-2 text-sm font-bold text-slate-700 mb-[-10px]">제품 수명 주기 관리 (Product Life Cycle)</h4>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">관리 유형 (cmf_3)</label>
+                            <select name="cmf_3" id="lifecycle-type">
+                                <option value="NONE" selected>사용 안함 (일반 자재)</option>
+                                <option value="PERIOD">주기 관리 (개월 단위)</option>
+                                <option value="COUNT">횟수 관리 (사용 횟수)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">설정 값 (cmf_4)</label>
+                            <input type="number" name="cmf_4" id="lifecycle-value" min="1" placeholder="유형 선택 후 입력" disabled class="bg-gray-200 cursor-not-allowed">
+                        </div>
+                    </div>
+
+                    <div><label class="block text-sm font-medium text-slate-700 bg-gray-50 p-1 rounded">내부 관리 코드 (자동생성)</label><input type="text" name="cmf_2" readonly class="bg-gray-100 text-slate-500 cursor-not-allowed" placeholder="저장 시 자동 생성됨"></div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">시리얼 번호 (선택)</label>
+                         <div class="flex space-x-2 mt-1">
+                            <input type="text" name="serial_number" class="!mt-0 flex-grow w-auto" placeholder="직접 입력 또는 스캔">
+                            <button type="button" id="open-scanner-btn-serial" class="flex-shrink-0 px-3 py-3 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition text-sm font-semibold flex items-center space-x-1.5">
+                                <svg class="scan-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                <span>바코드</span>
+                            </button>
+                            <button type="button" id="open-ocr-btn-serial" class="flex-shrink-0 px-3 py-3 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 transition text-sm font-semibold flex items-center space-x-1.5">
+                                <svg class="scan-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                </svg>
+                                <span>OCR</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">실사용자 (선택)</label>
+                        <select id="asset-form-user" name="user_id">
+                            <option value="">선택 안함</option>
+                        </select>
+                    </div>
+                    
+                    <div><label class="block text-sm font-medium text-slate-700">초기 수량 (qty) *</label><input type="number" name="qty" min="0" value="1" required></div>
+                    <div><label class="block text-sm font-medium text-slate-700">안전 재고 (safe_qty)</label><input type="number" name="safe_qty" min="0" value="0"></div>
+                    
+                    <div><label class="block text-sm font-medium text-slate-700">단위 (unit) *</label>
+                        <select name="unit" required>
+                            <option value="EA" selected>EA (개)</option>
+                            <option value="BOX">BOX (박스)</option>
+                            <option value="SET">SET (세트)</option>
+                            <option value="Kg">Kg (킬로그램)</option>
+                            <option value="L">L (리터)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex flex-col-reverse md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-3 border-t pt-4">
+                    <button type="button" id="close-asset-modal" class="w-full md:w-auto px-5 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition">취소</button>
+                    <button type="submit" id="asset-modal-submit-btn" class="w-full md:w-auto px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-md">저장 하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="scanner-modal" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl w-full max-w-md p-4">
+            <h3 class="text-lg font-bold text-center mb-4">QR/바코드를 스캔하세요</h3>
+            <div id="qr-reader" class="w-full rounded-lg overflow-hidden border"></div>
+            <button type="button" id="close-scanner-btn" class="mt-4 w-full px-5 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition">
+                취소
+            </button>
+        </div>
+    </div>
+
+    <div id="label-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl w-full max-w-sm p-6">
+            <h3 class="text-2xl font-bold text-slate-800 mb-4 text-center">라벨 발행</h3>
+            
+            <div id="label-content" class="w-full border-2 border-dashed border-slate-400 p-4 bg-white text-center">
+                <img src="logo_NBTS.gif" alt="Logo" class="h-8 w-auto mx-auto mb-3">
+                <p id="label-cmf2-text" class="text-xl font-extrabold text-black break-words mb-3"></p>
+                <div id="label-qrcode" class="flex-shrink-0 p-1 border w-fit mx-auto"></div>
+                <p class="text-xs text-red-600 font-bold mt-4 pt-3 border-t border-slate-200">
+                    경고: 훼손되지 않도록 주의해주세요
+                </p>
+            </div>
+
+            <div id="label-modal-buttons" class="mt-6 flex flex-col md:flex-row gap-3">
+                <button type="button" id="print-label-btn" class="w-full px-5 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition">
+                    🖨️ 인쇄하기
+                </button>
+                <button type="button" id="close-label-modal" class="w-full px-5 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dept-user-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-40 hidden">
+        <div class="bg-white rounded-xl w-full max-w-lg p-6 md:p-8">
+            <h3 id="dept-user-modal-title" class="text-2xl font-bold text-slate-800 mb-6 border-b pb-3">마스터 등록</h3>
+            <form id="dept-user-form">
+                <input type="hidden" name="master_type">
+                <input type="hidden" name="edit_id">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label id="label-field1" class="block text-sm font-medium text-slate-700">코드</label>
+                        <input type="text" id="input-field1" name="field1" required placeholder="예: ICT (수정 불가)">
+                    </div>
+                    <div>
+                        <label id="label-field2" class="block text-sm font-medium text-slate-700">이름</label>
+                        <input type="text" id="input-field2" name="field2" required placeholder="예: ICT 기획팀">
+                    </div>
+                    <div id="user-dept-select-group" class="hidden">
+                        <label class="block text-sm font-medium text-slate-700">소속 부서</label>
+                        <select name="user_dept_code" id="dept-user-form-dept-select">
+                            <option value="">소속 없음</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col-reverse md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-3 border-t pt-6 mt-6">
+                    <button type="button" id="close-dept-user-modal" class="w-full md:w-auto px-5 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition">취소</button>
+                    <button type="submit" class="w-full md:w-auto px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-md">저장 하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="bulk-label-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl w-full max-w-4xl p-6 md:p-8 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-6 border-b pb-3">
+                <h3 class="text-2xl font-bold text-slate-800">라벨 일괄 인쇄</h3>
+                <div id="bulk-label-modal-buttons" class="flex space-x-3">
+                    <button type="button" id="print-bulk-label-btn" class="px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition">🖨️ 인쇄하기</button>
+                    <button type="button" id="close-bulk-label-modal" class="px-5 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition">닫기</button>
+                </div>
+            </div>
+            
+            <div id="bulk-label-content-wrapper" class="flex-1 overflow-y-auto bg-slate-100 p-4 rounded-lg">
+                <div id="bulk-label-content" class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-4">※ 인쇄 설정: 용지에 맞게 '배율'을 조정하고 '배경 그래픽'을 활성화하세요.</p>
+        </div>
+    </div>
+
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

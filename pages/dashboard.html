@@ -1,0 +1,53 @@
+<section id="view-dashboard" class="view-section active flex-col">
+    <h2 class="text-3xl font-bold text-slate-800 mb-6">📊 대시보드</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h3 class="text-lg font-medium text-slate-600">총 등록 자산</h3>
+            <p id="kpi-total-assets" class="text-4xl font-bold text-indigo-600 mt-2">0</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h3 class="text-lg font-medium text-slate-600">총 재고 수량</h3>
+            <p id="kpi-total-stock" class="text-4xl font-bold text-green-600 mt-2">0</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h3 class="text-lg font-medium text-slate-600">안전 재고 부족</h3>
+            <p id="kpi-safety-alert" class="text-4xl font-bold text-red-600 mt-2">0</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">자산 유형별 현황</h3>
+            <div id="type-breakdown" class="space-y-2">
+                <p class="text-slate-500">데이터 로딩 중...</p>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">창고별 재고 현황</h3>
+            <div id="warehouse-stock" class="space-y-2">
+                <p class="text-slate-500">데이터 로딩 중...</p>
+            </div>
+        </div>
+        <div class="col-span-full bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">최근 입/출고 이력</h3>
+            <div id="dashboard-history" class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">시간</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">구분</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">자산명</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">수량</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">관리자</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-200">
+                        </tbody>
+                </table>
+            </div>
+            <div class="text-right mt-4">
+                <button onclick="window.changeView('consumption')" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">더보기 &rarr;</button>
+            </div>
+        </div>
+    </div>
+</section>

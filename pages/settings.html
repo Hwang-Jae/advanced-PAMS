@@ -1,0 +1,37 @@
+<section id="view-settings" class="view-section flex-col">
+    <h2 class="text-3xl font-bold text-slate-800 mb-6">⚙️ 설정</h2>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
+        <h3 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">Supabase 연결 설정</h3>
+        <p class="text-slate-600 mb-4">
+            Supabase 프로젝트의 `Project URL`과 `Anon Key`를 입력해주세요. <br>
+            이 정보는 브라우저의 로컬 저장소에 저장되어 다음에 자동으로 로드됩니다.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700">Supabase URL (예: admin.supabase.com)</label>
+                <input type="text" id="supabase-url" placeholder="https://your-project-id.supabase.co">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700">Supabase Key (Anon Key)</label>
+                <input type="text" id="supabase-key" placeholder="YOUR_SUPABASE_ANON_KEY">
+            </div>
+        </div>
+        <div class="flex justify-end mt-6">
+            <button id="save-supabase-settings-btn" class="px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-md">설정 저장</button>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">데이터 관리</h3>
+        <p class="text-slate-600 mb-4">모든 데이터를 다시 로드하거나 초기화할 수 있습니다.</p>
+        <div class="flex flex-col md:flex-row gap-4">
+            <button id="reload-data-btn" class="w-full md:w-auto px-5 py-2 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-700 transition shadow-md">
+                강제 새로고침
+            </button>
+            <button id="reset-all-data-btn" class="w-full md:w-auto px-5 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition shadow-md">
+                모든 데이터 초기화 (경고: 되돌릴 수 없음)
+            </button>
+        </div>
+    </div>
+</section>

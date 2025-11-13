@@ -1,0 +1,112 @@
+:host, body, html { font-family: 'Inter', sans-serif; }
+.animate-fade-in { animation: fadeIn 0.5s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+select, input[type="text"], input[type="date"], input[type="number"], textarea {
+    @apply mt-1 block w-full border border-slate-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500;
+}
+progress { @apply w-full h-2 rounded-full overflow-hidden; }
+progress::-webkit-progress-bar { @apply bg-slate-200; }
+progress::-webkit-progress-value { @apply bg-indigo-600 transition-all duration-500; }
+progress.warning::-webkit-progress-value { @apply bg-yellow-500; }
+progress.danger::-webkit-progress-value { @apply bg-red-500; }
+
+.scan-icon {
+    width: 1.5rem; /* 24px */
+    height: 1.5rem; /* 24px */
+}
+
+/* 👇 [신규] 자산 카드에 relative 추가 (체크박스 때문) */
+.asset-card {
+    position: relative;
+}
+
+/* 👇 [신규] 일괄 라벨 인쇄 스타일 */
+.bulk-label-item {
+    background-color: white;
+    border: 1px dashed #94a3b8; /* slate-400 */
+    padding: 0.75rem; /* p-3 */
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 160px; /* 고정 높이 */
+    box-sizing: border-box;
+    page-break-inside: avoid; /* 인쇄 시 페이지 나뉘지 않게 */
+}
+.bulk-label-item img {
+    height: 1.5rem; /* h-6 */
+    margin-bottom: 0.5rem; /* mb-2 */
+}
+.bulk-label-item .qr-code {
+    padding: 4px;
+    border: 1px solid #e2e8f0; /* slate-200 */
+    line-height: 0; /* QR코드 하단 공백 제거 */
+}
+.bulk-label-item .cmf-text {
+    font-size: 0.8rem;
+    font-weight: 800; /* extrabold */
+    color: black;
+    margin: 0.5rem 0;
+    word-break: break-all;
+}
+.bulk-label-item .warning-text {
+    font-size: 0.6rem;
+    color: #dc2626; /* red-600 */
+    font-weight: 700;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f1f5f9; /* slate-100 */
+}
+/* 👆 [신규] 완료 */
+
+
+/* 라벨 인쇄를 위한 스타일 */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #label-content, #label-content * {
+        visibility: visible;
+    }
+    #label-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    #label-modal-buttons {
+        display: none;
+    }
+
+    /* 👇 [신규] 일괄 인쇄 모달 인쇄 스타일 */
+    #bulk-label-modal {
+        background: none;
+        backdrop-filter: none;
+    }
+    #bulk-label-modal, #bulk-label-modal * {
+        visibility: hidden;
+    }
+    #bulk-label-content-wrapper, #bulk-label-content, #bulk-label-content * {
+        visibility: visible;
+    }
+    #bulk-label-content-wrapper {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow-y: visible;
+        background: none;
+        padding: 0;
+    }
+    #bulk-label-content {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* 인쇄 시 3열 강제 */
+        gap: 4px;
+    }
+    #bulk-label-modal-buttons, #close-bulk-label-modal {
+        display: none;
+    }
+    /* 👆 [신규] 완료 */
+}

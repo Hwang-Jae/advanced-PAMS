@@ -1,0 +1,63 @@
+<section id="view-consumption" class="view-section flex-col">
+    <h2 class="text-3xl font-bold text-slate-800 mb-6">📈 소모/반환 현황</h2>
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
+        <h3 class="text-lg font-bold text-slate-800 mb-4">재고 입/출고 등록</h3>
+        <form id="consumption-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700">구분 *</label>
+                <select name="tran_code" required>
+                    <option value="CONSUME">출고(소모)</option>
+                    <option value="RETURN">반환</option>
+                    <option value="IN">입고</option>
+                    <option value="ROLLBACK">입고(취소)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700">창고 *</label>
+                <select name="wh_code" required>
+                    <option value="OW">OW (사무창고)</option>
+                    <option value="FW">FW (공장창고)</option>
+                    <option value="LW">LW (연구실창고)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700">자산 코드 *</label>
+                <select name="product_code" id="cons-pcode" required>
+                    <option value="">자산 선택...</option>
+                    </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700">시리얼 번호 (선택)</label>
+                <select name="serial_number" id="cons-serial">
+                    <option value="">먼저 자산 코드를 선택하세요</option>
+                    </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700">수량 *</label>
+                <input type="number" name="qty" min="1" value="1" required>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full px-5 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition shadow-md">처리</button>
+            </div>
+        </form>
+    </div>
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-lg font-bold text-slate-800 mb-4">전체 입/출고 이력</h3>
+        <div id="history-list" class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">시간</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">구분</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">자산 코드</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">시리얼</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">수량</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">관리자</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</section>
